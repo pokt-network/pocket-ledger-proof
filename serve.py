@@ -84,7 +84,7 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    server = ThreadingHTTPServer(('', PORT), ProxyHandler)
+    server = ThreadingHTTPServer(('127.0.0.1', PORT), ProxyHandler)
     print(f"Serving on http://localhost:{PORT}")
     print(f"Proxying /speculos/* -> {SPECULOS_URL}")
     print(f"Open: http://localhost:{PORT}/index.html?dev=true")
