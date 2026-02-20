@@ -1,10 +1,12 @@
 # Pocket Ledger Proof of Ownership
 
-A single-file web app for proving ownership of Pocket Network (POKT) addresses stored on a Ledger hardware wallet. Uses WebUSB to communicate directly with the Pocket Ledger app — no backend, no extensions, no installs.
+A single-file web app for proving ownership of Pocket Network (POKT) addresses stored on a Ledger hardware wallet. Supports both direct Ledger USB connection and mnemonic-based recovery for when the Pocket Ledger app is unavailable.
 
 **Live:** https://pokt-network.github.io/pocket-ledger-proof/
 
 ## How It Works
+
+### Option A — Ledger USB (recommended)
 
 1. Connect your Ledger via USB and open the Pocket app
 2. The app retrieves your public key and derives your POKT address
@@ -12,14 +14,53 @@ A single-file web app for proving ownership of Pocket Network (POKT) addresses s
 4. The Ed25519 signature is verified locally in the browser
 5. Export a JSON proof file that anyone can independently verify
 
-The proof JSON contains the address, public key, challenge message, and signature — everything needed for offline verification.
+### Option B — Mnemonic Recovery
+
+If the Pocket Ledger app has been delisted from Ledger Live and you cannot install it, you can derive your keys from your 24-word recovery phrase directly in the browser:
+
+1. **Disconnect from the internet** before entering your mnemonic
+2. Open the page (it works offline — save the HTML file first)
+3. Click "Recover with Mnemonic" at the bottom of the Generate Proof card
+4. Enter your 24-word recovery phrase (and passphrase if you set one)
+5. Click "Derive Key & Prove Ownership"
+6. Export the proof JSON file
+
+The mnemonic recovery uses BIP32-Ed25519 key derivation (matching the Ledger firmware's implementation) with zero external dependencies — all cryptography runs in-browser using Web Crypto API and embedded tweetnacl.
+
+**Security notes:**
+- Your mnemonic is never transmitted — all derivation happens locally
+- Inputs are cleared immediately after key derivation
+- Use a private/incognito window and close it after
+- Mnemonic recovery works in any modern browser (not just Chrome/Edge)
+
+## Account Index & Derivation Path
+
+The account index selects which key to derive from your Ledger seed. Most users have a single account at **index 0** (the default).
+
+If you created additional accounts, generate a separate proof for each index. The derived address changes with each index — try 0 first and verify it matches your known POKT address.
+
+### Derivation path format
+
+The Pocket Ledger app accepts variable-length BIP-44 paths — it only validates that the path starts with `44'/635'` and passes the full path to the Ledger's key derivation. The app offers two path formats via a dropdown:
+
+| Format | Path | Notes |
+|--------|------|-------|
+| **Standard** (default) | `44'/635'/index` | Used by the Ledger app's GetPubkey tests |
+| **Extended** | `44'/635'/index'/0/0` | Full BIP-44 structure with change/address levels |
+
+The standard 3-component path matches what the [Pocket Ledger app test suite](https://github.com/aspect-build/ledger-app-pocket) uses for public key retrieval. If your address doesn't match with one format, try the other. The derivation path is recorded in the exported proof JSON so verifiers know which was used.
 
 ## Requirements
 
+### Ledger USB mode
 - **Browser:** Chrome or Edge (WebUSB support required)
 - **Device:** Ledger Nano S, S+, or X
 - **App:** [Pocket Ledger app](https://github.com/aspect-build/ledger-app-pocket) installed on the device
 - **Setting:** Blind Signing must be enabled in the Pocket app settings
+
+### Mnemonic recovery mode
+- **Browser:** Any modern browser (Chrome, Firefox, Safari, Edge)
+- **Network:** Works fully offline
 
 ## Verification
 
@@ -69,7 +110,7 @@ Communicates with the Pocket Ledger app using the Alamgu blocks protocol over AP
 
 - **GetPubkey (INS 0x02):** Retrieves Ed25519 public key silently
 - **BlindSign (INS 0x04):** Signs arbitrary JSON with on-device approval
-- **BIP-44 path:** `44'/635'/index'/0/0`
+- **BIP-44 path:** `44'/635'/...` (variable length, see Derivation Path section)
 - **Address derivation:** First 20 bytes of `SHA256(ed25519_pubkey)`
 
 ## License

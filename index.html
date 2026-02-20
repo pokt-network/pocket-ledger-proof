@@ -198,13 +198,29 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
             </div>
           </div>
 
-          <!-- Account Index -->
+          <!-- Account Index & Path Format -->
           <div class="bg-gray-50 p-4 rounded-lg">
-            <label for="accountIndex" class="block text-sm font-medium text-gray-700 mb-2">Account Index</label>
-            <input type="number" id="accountIndex" min="0" value="0"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="0">
-            <p class="mt-2 text-xs text-gray-500">BIP-44 Path: 44'/635'/<span id="pathDisplay">0</span>'/0/0</p>
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+              <div style="flex:1;">
+                <label for="accountIndex" class="block text-sm font-medium text-gray-700 mb-2">Account Index</label>
+                <input type="number" id="accountIndex" min="0" value="0"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0">
+              </div>
+              <div style="flex:1;">
+                <label for="pathFormat" class="block text-sm font-medium text-gray-700 mb-2">Derivation Path</label>
+                <select id="pathFormat"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  style="background:white;">
+                  <option value="3">44'/635'/x (standard)</option>
+                  <option value="5">44'/635'/x'/0/0 (extended)</option>
+                </select>
+              </div>
+            </div>
+            <p class="mt-2 text-xs text-gray-500">
+              Path: <strong><span id="pathDisplay">44'/635'/0</span></strong>
+              — if your address doesn't match, try the other derivation path.
+            </p>
           </div>
 
           <!-- Status -->
@@ -318,23 +334,37 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
           <!-- Instructions -->
           <div class="mt-8 bg-blue-50 p-6 rounded-lg">
             <h3 class="font-semibold text-gray-900 mb-3">Instructions:</h3>
+            <p class="text-gray-600 text-xs font-semibold mb-2" style="text-transform:uppercase;letter-spacing:0.05em;">Option A — Ledger USB (recommended)</p>
             <ol class="list-decimal list-inside space-y-2 text-gray-700 text-sm">
               <li>Connect your Ledger device via USB</li>
               <li>Unlock your Ledger and open the <strong>Pocket</strong> app</li>
               <li>In the Pocket app settings, <strong>enable Blind Signing</strong></li>
               <li>Click "Connect Ledger" and select your device</li>
-              <li>Enter your account index (usually 0 for the first account)</li>
               <li>Click "Prove Ownership" to sign a challenge message</li>
               <li>Approve the <strong>blind sign</strong> request on your Ledger device</li>
-              <li>Export the proof JSON file and submit it below or send to the migration team</li>
+              <li>Export the proof JSON file</li>
             </ol>
+            <p class="text-gray-600 text-xs font-semibold mb-2 mt-4" style="text-transform:uppercase;letter-spacing:0.05em;">Option B — Mnemonic Recovery</p>
+            <ol class="list-decimal list-inside space-y-2 text-gray-700 text-sm">
+              <li>If the Pocket Ledger app is unavailable, scroll down and click <strong>"Recover with Mnemonic"</strong></li>
+              <li><strong>Disconnect from the internet</strong> before entering your recovery phrase</li>
+              <li>Enter your 24-word mnemonic (and passphrase if you set one)</li>
+              <li>Click "Derive Key &amp; Prove Ownership" — your key is derived in-browser</li>
+              <li>Export the proof JSON file</li>
+            </ol>
+            <p class="text-gray-600 text-xs font-semibold mb-2 mt-4" style="text-transform:uppercase;letter-spacing:0.05em;">Account Index</p>
+            <p class="text-gray-700 text-sm">
+              Most users have a single account at <strong>index 0</strong> (the default). If you created additional accounts
+              on your Ledger, increment the index and generate a separate proof for each. The derived address changes with each index —
+              try index 0 first and verify it matches your known POKT address.
+            </p>
             <p class="text-gray-500 text-xs mt-3">
-              <strong>Note:</strong> Mnemonic recovery mode works in any modern browser — WebUSB (Chrome/Edge) is only needed for direct Ledger connection.
+              <strong>Note:</strong> Mnemonic recovery works in any modern browser. WebUSB (Chrome/Edge) is only needed for direct Ledger connection.
             </p>
           </div>
 
           <div style="text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid rgba(76,155,245,0.08);">
-            <p style="color:#3d4d60;font-size:12px;">Ed25519 &middot; BIP-44: 44'/635'/x'/0/0 &middot; Nano S, S+, X</p>
+            <p style="color:#3d4d60;font-size:12px;">Ed25519 &middot; BIP-44: 44'/635'/ &middot; Nano S, S+, X</p>
           </div>
         </div>
       </div>
@@ -987,7 +1017,7 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
       this.keyPair = keyPair;
     }
 
-    MnemonicTransport.create = async function (mnemonic, passphrase, accountIndex) {
+    MnemonicTransport.create = async function (mnemonic, passphrase) {
       // Validate mnemonic
       var result = await validateMnemonic(mnemonic);
       if (!result.valid) throw new Error(result.error);
@@ -995,8 +1025,8 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
       // Derive BIP39 seed
       var bip39Seed = await mnemonicToSeed(mnemonic, passphrase);
 
-      // Derive BIP32-Ed25519 key at Pocket path
-      var path = "44'/635'/" + accountIndex;
+      // Derive BIP32-Ed25519 key at Pocket path (must match getAccountPath() used by USB mode)
+      var path = getAccountPath();
       var ed25519Seed = await bip32Ed25519Derive(bip39Seed, path);
 
       // Zero BIP39 seed
@@ -1401,6 +1431,10 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
 
     function getAccountPath() {
       var idx = $('accountIndex').value || '0';
+      var fmt = $('pathFormat').value;
+      if (fmt === '3') {
+        return "44'/" + POCKET_COIN_TYPE + "'/" + idx;
+      }
       return "44'/" + POCKET_COIN_TYPE + "'/" + idx + "'/0/0";
     }
 
@@ -1586,7 +1620,7 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
         challenge: currentChallenge,
         signature: currentSignature,
         timestamp: timestamp,
-        accountIndex: $('accountIndex').value || '0',
+        derivationPath: getAccountPath(),
         method: method,
         verified: currentVerified,
       };
@@ -1905,9 +1939,17 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
     }
 
     // Path display
-    $('accountIndex').addEventListener('input', function () {
-      $('pathDisplay').textContent = this.value || '0';
-    });
+    function updatePathDisplay() {
+      var idx = $('accountIndex').value || '0';
+      var fmt = $('pathFormat').value;
+      if (fmt === '3') {
+        $('pathDisplay').textContent = "44'/635'/" + idx;
+      } else {
+        $('pathDisplay').textContent = "44'/635'/" + idx + "'/0/0";
+      }
+    }
+    $('accountIndex').addEventListener('input', updatePathDisplay);
+    $('pathFormat').addEventListener('change', updatePathDisplay);
 
     // Button handlers
     $('connectBtn').addEventListener('click', connectDevice);
@@ -1947,7 +1989,6 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
     $('deriveBtn').addEventListener('click', async function () {
       var mnemonic = $('mnemonicInput').value.trim();
       var passphrase = $('mnemonicPassphrase').value;
-      var accountIdx = $('accountIndex').value || '0';
 
       if (!mnemonic) {
         showError('Please enter your recovery phrase.');
@@ -1968,7 +2009,7 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
         showStatus('Deriving key (this may take a moment)...');
 
         // Create MnemonicTransport
-        var mnemonicTransport = await MnemonicTransport.create(mnemonic, passphrase, accountIdx);
+        var mnemonicTransport = await MnemonicTransport.create(mnemonic, passphrase);
 
         // Clear inputs immediately
         $('mnemonicInput').value = '';
