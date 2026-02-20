@@ -92,10 +92,10 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
         <div class="space-y-6">
           <!-- Browser check warning -->
           <div id="noWebUSB" class="hidden bg-red-50 border border-red-200 p-4 rounded-lg">
-            <p class="text-red-800 font-semibold">Browser Not Supported</p>
+            <p class="text-red-800 font-semibold">Browser Not Supported for USB</p>
             <p class="text-red-700 text-sm mt-1">
-              This tool requires WebUSB. Please use <strong>Google Chrome</strong>, <strong>Microsoft Edge</strong>,
-              or <strong>Opera</strong>. Firefox and Safari are not supported.
+              Direct Ledger connection requires WebUSB (<strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Opera</strong>).
+              However, <strong>mnemonic recovery</strong> works in any browser — scroll down to use it.
             </p>
           </div>
           <div id="noHTTPS" class="hidden bg-red-50 border border-red-200 p-4 rounded-lg">
@@ -261,6 +261,60 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
             </button>
           </div>
 
+          <!-- ═══════════ Mnemonic Recovery Mode ═══════════ -->
+          <div class="mt-6" style="border-top:1px solid rgba(248,113,113,0.15);padding-top:20px;">
+            <button id="recoveryToggleBtn" type="button"
+              style="background:none;border:none;cursor:pointer;color:#f87171;font-size:0.85rem;font-weight:500;padding:0;display:flex;align-items:center;gap:6px;opacity:0.8;transition:opacity 0.2s;"
+              onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
+              <span id="recoveryToggleArrow" style="transition:transform 0.2s;display:inline-block;">&#9654;</span>
+              Can't use Ledger? Recover with Mnemonic
+            </button>
+
+            <div id="recoveryPanel" class="hidden" style="margin-top:16px;">
+              <!-- Security Warning -->
+              <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:12px;padding:16px;margin-bottom:16px;">
+                <p style="color:#fca5a5;font-weight:600;font-size:0.9rem;margin-bottom:8px;">Security Warning</p>
+                <ul style="color:#d4a0a0;font-size:0.8rem;list-style:disc;padding-left:20px;line-height:1.6;">
+                  <li>Your mnemonic is the master key to all your funds. Entering it in a browser carries risk.</li>
+                  <li><strong>Disconnect from the internet</strong> before entering your mnemonic (this page works offline).</li>
+                  <li>Use a <strong>private/incognito window</strong> and close it immediately after.</li>
+                  <li>JavaScript cannot guarantee memory is fully erased — inputs are cleared after derivation, but traces may remain in browser memory.</li>
+                  <li>Only use this if you <strong>cannot</strong> install the Pocket Ledger app (it has been delisted from Ledger Live).</li>
+                </ul>
+              </div>
+
+              <!-- Mnemonic Input -->
+              <div style="margin-bottom:12px;">
+                <label for="mnemonicInput" class="block text-sm font-medium text-gray-700 mb-2">Recovery Phrase (12 or 24 words)</label>
+                <textarea id="mnemonicInput" rows="3"
+                  autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-red-400 focus:border-red-400 resize-none"
+                  style="border-color:rgba(248,113,113,0.3)!important;"
+                  placeholder="Enter your 24-word recovery phrase, separated by spaces..."></textarea>
+              </div>
+
+              <!-- Passphrase (optional) -->
+              <div style="margin-bottom:16px;">
+                <label for="mnemonicPassphrase" class="block text-sm font-medium text-gray-700 mb-2">
+                  Passphrase <span style="color:#6b7a8d;font-weight:400;">(optional — 25th word)</span>
+                </label>
+                <input type="password" id="mnemonicPassphrase"
+                  autocomplete="off" spellcheck="false"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-red-400 focus:border-red-400"
+                  style="border-color:rgba(248,113,113,0.3)!important;"
+                  placeholder="Leave empty if you didn't set one">
+              </div>
+
+              <!-- Derive Button -->
+              <button id="deriveBtn" type="button"
+                style="width:100%;background:linear-gradient(135deg,#dc2626,#f87171);color:white;font-weight:600;padding:12px 24px;border-radius:9999px;border:none;cursor:pointer;font-size:0.95rem;transition:all 0.25s;box-shadow:0 4px 20px rgba(248,113,113,0.25);"
+                onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 30px rgba(248,113,113,0.4)'"
+                onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(248,113,113,0.25)'">
+                Derive Key &amp; Prove Ownership
+              </button>
+            </div>
+          </div>
+
           <!-- Instructions -->
           <div class="mt-8 bg-blue-50 p-6 rounded-lg">
             <h3 class="font-semibold text-gray-900 mb-3">Instructions:</h3>
@@ -274,6 +328,9 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
               <li>Approve the <strong>blind sign</strong> request on your Ledger device</li>
               <li>Export the proof JSON file and submit it below or send to the migration team</li>
             </ol>
+            <p class="text-gray-500 text-xs mt-3">
+              <strong>Note:</strong> Mnemonic recovery mode works in any modern browser — WebUSB (Chrome/Edge) is only needed for direct Ledger connection.
+            </p>
           </div>
 
           <div style="text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid rgba(76,155,245,0.08);">
@@ -439,6 +496,528 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
       var buf = await crypto.subtle.digest('SHA-256', data);
       return new Uint8Array(buf);
     }
+
+    // ─── Zero-fill helper ──────────────────────────────────────────────
+
+    function zeroUint8Array(arr) {
+      if (arr && arr.fill) arr.fill(0);
+    }
+
+    // ─── HMAC-SHA512 (Web Crypto) ────────────────────────────────────
+
+    async function hmacSha512(key, data) {
+      var cryptoKey = await crypto.subtle.importKey(
+        'raw', key, { name: 'HMAC', hash: 'SHA-512' }, false, ['sign']
+      );
+      var sig = await crypto.subtle.sign('HMAC', cryptoKey, data);
+      return new Uint8Array(sig);
+    }
+
+    // ─── BIP39 English wordlist ──────────────────────────────────────
+
+    var BIP39_ENGLISH = null; // lazy-loaded
+
+    var BIP39_ENGLISH_WORDS = [
+      "abandon","ability","able","about","above","absent","absorb","abstract","absurd","abuse","access","accident",
+      "account","accuse","achieve","acid","acoustic","acquire","across","act","action","actor","actress","actual",
+      "adapt","add","addict","address","adjust","admit","adult","advance","advice","aerobic","affair","afford",
+      "afraid","again","age","agent","agree","ahead","aim","air","airport","aisle","alarm","album",
+      "alcohol","alert","alien","all","alley","allow","almost","alone","alpha","already","also","alter",
+      "always","amateur","amazing","among","amount","amused","analyst","anchor","ancient","anger","angle","angry",
+      "animal","ankle","announce","annual","another","answer","antenna","antique","anxiety","any","apart","apology",
+      "appear","apple","approve","april","arch","arctic","area","arena","argue","arm","armed","armor",
+      "army","around","arrange","arrest","arrive","arrow","art","artefact","artist","artwork","ask","aspect",
+      "assault","asset","assist","assume","asthma","athlete","atom","attack","attend","attitude","attract","auction",
+      "audit","august","aunt","author","auto","autumn","average","avocado","avoid","awake","aware","away",
+      "awesome","awful","awkward","axis","baby","bachelor","bacon","badge","bag","balance","balcony","ball",
+      "bamboo","banana","banner","bar","barely","bargain","barrel","base","basic","basket","battle","beach",
+      "bean","beauty","because","become","beef","before","begin","behave","behind","believe","below","belt",
+      "bench","benefit","best","betray","better","between","beyond","bicycle","bid","bike","bind","biology",
+      "bird","birth","bitter","black","blade","blame","blanket","blast","bleak","bless","blind","blood",
+      "blossom","blouse","blue","blur","blush","board","boat","body","boil","bomb","bone","bonus",
+      "book","boost","border","boring","borrow","boss","bottom","bounce","box","boy","bracket","brain",
+      "brand","brass","brave","bread","breeze","brick","bridge","brief","bright","bring","brisk","broccoli",
+      "broken","bronze","broom","brother","brown","brush","bubble","buddy","budget","buffalo","build","bulb",
+      "bulk","bullet","bundle","bunker","burden","burger","burst","bus","business","busy","butter","buyer",
+      "buzz","cabbage","cabin","cable","cactus","cage","cake","call","calm","camera","camp","can",
+      "canal","cancel","candy","cannon","canoe","canvas","canyon","capable","capital","captain","car","carbon",
+      "card","cargo","carpet","carry","cart","case","cash","casino","castle","casual","cat","catalog",
+      "catch","category","cattle","caught","cause","caution","cave","ceiling","celery","cement","census","century",
+      "cereal","certain","chair","chalk","champion","change","chaos","chapter","charge","chase","chat","cheap",
+      "check","cheese","chef","cherry","chest","chicken","chief","child","chimney","choice","choose","chronic",
+      "chuckle","chunk","churn","cigar","cinnamon","circle","citizen","city","civil","claim","clap","clarify",
+      "claw","clay","clean","clerk","clever","click","client","cliff","climb","clinic","clip","clock",
+      "clog","close","cloth","cloud","clown","club","clump","cluster","clutch","coach","coast","coconut",
+      "code","coffee","coil","coin","collect","color","column","combine","come","comfort","comic","common",
+      "company","concert","conduct","confirm","congress","connect","consider","control","convince","cook","cool","copper",
+      "copy","coral","core","corn","correct","cost","cotton","couch","country","couple","course","cousin",
+      "cover","coyote","crack","cradle","craft","cram","crane","crash","crater","crawl","crazy","cream",
+      "credit","creek","crew","cricket","crime","crisp","critic","crop","cross","crouch","crowd","crucial",
+      "cruel","cruise","crumble","crunch","crush","cry","crystal","cube","culture","cup","cupboard","curious",
+      "current","curtain","curve","cushion","custom","cute","cycle","dad","damage","damp","dance","danger",
+      "daring","dash","daughter","dawn","day","deal","debate","debris","decade","december","decide","decline",
+      "decorate","decrease","deer","defense","define","defy","degree","delay","deliver","demand","demise","denial",
+      "dentist","deny","depart","depend","deposit","depth","deputy","derive","describe","desert","design","desk",
+      "despair","destroy","detail","detect","develop","device","devote","diagram","dial","diamond","diary","dice",
+      "diesel","diet","differ","digital","dignity","dilemma","dinner","dinosaur","direct","dirt","disagree","discover",
+      "disease","dish","dismiss","disorder","display","distance","divert","divide","divorce","dizzy","doctor","document",
+      "dog","doll","dolphin","domain","donate","donkey","donor","door","dose","double","dove","draft",
+      "dragon","drama","drastic","draw","dream","dress","drift","drill","drink","drip","drive","drop",
+      "drum","dry","duck","dumb","dune","during","dust","dutch","duty","dwarf","dynamic","eager",
+      "eagle","early","earn","earth","easily","east","easy","echo","ecology","economy","edge","edit",
+      "educate","effort","egg","eight","either","elbow","elder","electric","elegant","element","elephant","elevator",
+      "elite","else","embark","embody","embrace","emerge","emotion","employ","empower","empty","enable","enact",
+      "end","endless","endorse","enemy","energy","enforce","engage","engine","enhance","enjoy","enlist","enough",
+      "enrich","enroll","ensure","enter","entire","entry","envelope","episode","equal","equip","era","erase",
+      "erode","erosion","error","erupt","escape","essay","essence","estate","eternal","ethics","evidence","evil",
+      "evoke","evolve","exact","example","excess","exchange","excite","exclude","excuse","execute","exercise","exhaust",
+      "exhibit","exile","exist","exit","exotic","expand","expect","expire","explain","expose","express","extend",
+      "extra","eye","eyebrow","fabric","face","faculty","fade","faint","faith","fall","false","fame",
+      "family","famous","fan","fancy","fantasy","farm","fashion","fat","fatal","father","fatigue","fault",
+      "favorite","feature","february","federal","fee","feed","feel","female","fence","festival","fetch","fever",
+      "few","fiber","fiction","field","figure","file","film","filter","final","find","fine","finger",
+      "finish","fire","firm","first","fiscal","fish","fit","fitness","fix","flag","flame","flash",
+      "flat","flavor","flee","flight","flip","float","flock","floor","flower","fluid","flush","fly",
+      "foam","focus","fog","foil","fold","follow","food","foot","force","forest","forget","fork",
+      "fortune","forum","forward","fossil","foster","found","fox","fragile","frame","frequent","fresh","friend",
+      "fringe","frog","front","frost","frown","frozen","fruit","fuel","fun","funny","furnace","fury",
+      "future","gadget","gain","galaxy","gallery","game","gap","garage","garbage","garden","garlic","garment",
+      "gas","gasp","gate","gather","gauge","gaze","general","genius","genre","gentle","genuine","gesture",
+      "ghost","giant","gift","giggle","ginger","giraffe","girl","give","glad","glance","glare","glass",
+      "glide","glimpse","globe","gloom","glory","glove","glow","glue","goat","goddess","gold","good",
+      "goose","gorilla","gospel","gossip","govern","gown","grab","grace","grain","grant","grape","grass",
+      "gravity","great","green","grid","grief","grit","grocery","group","grow","grunt","guard","guess",
+      "guide","guilt","guitar","gun","gym","habit","hair","half","hammer","hamster","hand","happy",
+      "harbor","hard","harsh","harvest","hat","have","hawk","hazard","head","health","heart","heavy",
+      "hedgehog","height","hello","helmet","help","hen","hero","hidden","high","hill","hint","hip",
+      "hire","history","hobby","hockey","hold","hole","holiday","hollow","home","honey","hood","hope",
+      "horn","horror","horse","hospital","host","hotel","hour","hover","hub","huge","human","humble",
+      "humor","hundred","hungry","hunt","hurdle","hurry","hurt","husband","hybrid","ice","icon","idea",
+      "identify","idle","ignore","ill","illegal","illness","image","imitate","immense","immune","impact","impose",
+      "improve","impulse","inch","include","income","increase","index","indicate","indoor","industry","infant","inflict",
+      "inform","inhale","inherit","initial","inject","injury","inmate","inner","innocent","input","inquiry","insane",
+      "insect","inside","inspire","install","intact","interest","into","invest","invite","involve","iron","island",
+      "isolate","issue","item","ivory","jacket","jaguar","jar","jazz","jealous","jeans","jelly","jewel",
+      "job","join","joke","journey","joy","judge","juice","jump","jungle","junior","junk","just",
+      "kangaroo","keen","keep","ketchup","key","kick","kid","kidney","kind","kingdom","kiss","kit",
+      "kitchen","kite","kitten","kiwi","knee","knife","knock","know","lab","label","labor","ladder",
+      "lady","lake","lamp","language","laptop","large","later","latin","laugh","laundry","lava","law",
+      "lawn","lawsuit","layer","lazy","leader","leaf","learn","leave","lecture","left","leg","legal",
+      "legend","leisure","lemon","lend","length","lens","leopard","lesson","letter","level","liar","liberty",
+      "library","license","life","lift","light","like","limb","limit","link","lion","liquid","list",
+      "little","live","lizard","load","loan","lobster","local","lock","logic","lonely","long","loop",
+      "lottery","loud","lounge","love","loyal","lucky","luggage","lumber","lunar","lunch","luxury","lyrics",
+      "machine","mad","magic","magnet","maid","mail","main","major","make","mammal","man","manage",
+      "mandate","mango","mansion","manual","maple","marble","march","margin","marine","market","marriage","mask",
+      "mass","master","match","material","math","matrix","matter","maximum","maze","meadow","mean","measure",
+      "meat","mechanic","medal","media","melody","melt","member","memory","mention","menu","mercy","merge",
+      "merit","merry","mesh","message","metal","method","middle","midnight","milk","million","mimic","mind",
+      "minimum","minor","minute","miracle","mirror","misery","miss","mistake","mix","mixed","mixture","mobile",
+      "model","modify","mom","moment","monitor","monkey","monster","month","moon","moral","more","morning",
+      "mosquito","mother","motion","motor","mountain","mouse","move","movie","much","muffin","mule","multiply",
+      "muscle","museum","mushroom","music","must","mutual","myself","mystery","myth","naive","name","napkin",
+      "narrow","nasty","nation","nature","near","neck","need","negative","neglect","neither","nephew","nerve",
+      "nest","net","network","neutral","never","news","next","nice","night","noble","noise","nominee",
+      "noodle","normal","north","nose","notable","note","nothing","notice","novel","now","nuclear","number",
+      "nurse","nut","oak","obey","object","oblige","obscure","observe","obtain","obvious","occur","ocean",
+      "october","odor","off","offer","office","often","oil","okay","old","olive","olympic","omit",
+      "once","one","onion","online","only","open","opera","opinion","oppose","option","orange","orbit",
+      "orchard","order","ordinary","organ","orient","original","orphan","ostrich","other","outdoor","outer","output",
+      "outside","oval","oven","over","own","owner","oxygen","oyster","ozone","pact","paddle","page",
+      "pair","palace","palm","panda","panel","panic","panther","paper","parade","parent","park","parrot",
+      "party","pass","patch","path","patient","patrol","pattern","pause","pave","payment","peace","peanut",
+      "pear","peasant","pelican","pen","penalty","pencil","people","pepper","perfect","permit","person","pet",
+      "phone","photo","phrase","physical","piano","picnic","picture","piece","pig","pigeon","pill","pilot",
+      "pink","pioneer","pipe","pistol","pitch","pizza","place","planet","plastic","plate","play","please",
+      "pledge","pluck","plug","plunge","poem","poet","point","polar","pole","police","pond","pony",
+      "pool","popular","portion","position","possible","post","potato","pottery","poverty","powder","power","practice",
+      "praise","predict","prefer","prepare","present","pretty","prevent","price","pride","primary","print","priority",
+      "prison","private","prize","problem","process","produce","profit","program","project","promote","proof","property",
+      "prosper","protect","proud","provide","public","pudding","pull","pulp","pulse","pumpkin","punch","pupil",
+      "puppy","purchase","purity","purpose","purse","push","put","puzzle","pyramid","quality","quantum","quarter",
+      "question","quick","quit","quiz","quote","rabbit","raccoon","race","rack","radar","radio","rail",
+      "rain","raise","rally","ramp","ranch","random","range","rapid","rare","rate","rather","raven",
+      "raw","razor","ready","real","reason","rebel","rebuild","recall","receive","recipe","record","recycle",
+      "reduce","reflect","reform","refuse","region","regret","regular","reject","relax","release","relief","rely",
+      "remain","remember","remind","remove","render","renew","rent","reopen","repair","repeat","replace","report",
+      "require","rescue","resemble","resist","resource","response","result","retire","retreat","return","reunion","reveal",
+      "review","reward","rhythm","rib","ribbon","rice","rich","ride","ridge","rifle","right","rigid",
+      "ring","riot","ripple","risk","ritual","rival","river","road","roast","robot","robust","rocket",
+      "romance","roof","rookie","room","rose","rotate","rough","round","route","royal","rubber","rude",
+      "rug","rule","run","runway","rural","sad","saddle","sadness","safe","sail","salad","salmon",
+      "salon","salt","salute","same","sample","sand","satisfy","satoshi","sauce","sausage","save","say",
+      "scale","scan","scare","scatter","scene","scheme","school","science","scissors","scorpion","scout","scrap",
+      "screen","script","scrub","sea","search","season","seat","second","secret","section","security","seed",
+      "seek","segment","select","sell","seminar","senior","sense","sentence","series","service","session","settle",
+      "setup","seven","shadow","shaft","shallow","share","shed","shell","sheriff","shield","shift","shine",
+      "ship","shiver","shock","shoe","shoot","shop","short","shoulder","shove","shrimp","shrug","shuffle",
+      "shy","sibling","sick","side","siege","sight","sign","silent","silk","silly","silver","similar",
+      "simple","since","sing","siren","sister","situate","six","size","skate","sketch","ski","skill",
+      "skin","skirt","skull","slab","slam","sleep","slender","slice","slide","slight","slim","slogan",
+      "slot","slow","slush","small","smart","smile","smoke","smooth","snack","snake","snap","sniff",
+      "snow","soap","soccer","social","sock","soda","soft","solar","soldier","solid","solution","solve",
+      "someone","song","soon","sorry","sort","soul","sound","soup","source","south","space","spare",
+      "spatial","spawn","speak","special","speed","spell","spend","sphere","spice","spider","spike","spin",
+      "spirit","split","spoil","sponsor","spoon","sport","spot","spray","spread","spring","spy","square",
+      "squeeze","squirrel","stable","stadium","staff","stage","stairs","stamp","stand","start","state","stay",
+      "steak","steel","stem","step","stereo","stick","still","sting","stock","stomach","stone","stool",
+      "story","stove","strategy","street","strike","strong","struggle","student","stuff","stumble","style","subject",
+      "submit","subway","success","such","sudden","suffer","sugar","suggest","suit","summer","sun","sunny",
+      "sunset","super","supply","supreme","sure","surface","surge","surprise","surround","survey","suspect","sustain",
+      "swallow","swamp","swap","swarm","swear","sweet","swift","swim","swing","switch","sword","symbol",
+      "symptom","syrup","system","table","tackle","tag","tail","talent","talk","tank","tape","target",
+      "task","taste","tattoo","taxi","teach","team","tell","ten","tenant","tennis","tent","term",
+      "test","text","thank","that","theme","then","theory","there","they","thing","this","thought",
+      "three","thrive","throw","thumb","thunder","ticket","tide","tiger","tilt","timber","time","tiny",
+      "tip","tired","tissue","title","toast","tobacco","today","toddler","toe","together","toilet","token",
+      "tomato","tomorrow","tone","tongue","tonight","tool","tooth","top","topic","topple","torch","tornado",
+      "tortoise","toss","total","tourist","toward","tower","town","toy","track","trade","traffic","tragic",
+      "train","transfer","trap","trash","travel","tray","treat","tree","trend","trial","tribe","trick",
+      "trigger","trim","trip","trophy","trouble","truck","true","truly","trumpet","trust","truth","try",
+      "tube","tuition","tumble","tuna","tunnel","turkey","turn","turtle","twelve","twenty","twice","twin",
+      "twist","two","type","typical","ugly","umbrella","unable","unaware","uncle","uncover","under","undo",
+      "unfair","unfold","unhappy","uniform","unique","unit","universe","unknown","unlock","until","unusual","unveil",
+      "update","upgrade","uphold","upon","upper","upset","urban","urge","usage","use","used","useful",
+      "useless","usual","utility","vacant","vacuum","vague","valid","valley","valve","van","vanish","vapor",
+      "various","vast","vault","vehicle","velvet","vendor","venture","venue","verb","verify","version","very",
+      "vessel","veteran","viable","vibrant","vicious","victory","video","view","village","vintage","violin","virtual",
+      "virus","visa","visit","visual","vital","vivid","vocal","voice","void","volcano","volume","vote",
+      "voyage","wage","wagon","wait","walk","wall","walnut","want","warfare","warm","warrior","wash",
+      "wasp","waste","water","wave","way","wealth","weapon","wear","weasel","weather","web","wedding",
+      "weekend","weird","welcome","west","wet","whale","what","wheat","wheel","when","where","whip",
+      "whisper","wide","width","wife","wild","will","win","window","wine","wing","wink","winner",
+      "winter","wire","wisdom","wise","wish","witness","wolf","woman","wonder","wood","wool","word",
+      "work","world","worry","worth","wrap","wreck","wrestle","wrist","write","wrong","yard","year",
+      "yellow","you","young","youth","zebra","zero","zone","zoo"
+    ];
+
+    async function loadBip39Wordlist() {
+      if (BIP39_ENGLISH) return BIP39_ENGLISH;
+      // Embedded inline — 2048 words
+      BIP39_ENGLISH = BIP39_ENGLISH_WORDS;
+      return BIP39_ENGLISH;
+    }
+
+    // ─── BIP39 functions ─────────────────────────────────────────────
+
+    async function validateMnemonic(mnemonic) {
+      var wordlist = await loadBip39Wordlist();
+      var words = mnemonic.trim().toLowerCase().split(/\s+/);
+      if (words.length !== 12 && words.length !== 24) {
+        return { valid: false, error: 'Mnemonic must be 12 or 24 words (got ' + words.length + ')' };
+      }
+      for (var i = 0; i < words.length; i++) {
+        var idx = wordlist.indexOf(words[i]);
+        if (idx < 0) {
+          return { valid: false, error: 'Unknown word at position ' + (i + 1) + ': "' + words[i] + '"' };
+        }
+      }
+      // Checksum verification: convert words to bits, verify last CS bits = SHA256(ENT)[0:CS]
+      var bits = '';
+      for (var i = 0; i < words.length; i++) {
+        var idx = wordlist.indexOf(words[i]);
+        bits += idx.toString(2).padStart(11, '0');
+      }
+      var entBits = words.length === 12 ? 128 : 256;
+      var csBits = entBits / 32;
+      var entSection = bits.slice(0, entBits);
+      var csSection = bits.slice(entBits);
+      // Convert entropy bits to bytes
+      var entBytes = new Uint8Array(entBits / 8);
+      for (var i = 0; i < entBytes.length; i++) {
+        entBytes[i] = parseInt(entSection.slice(i * 8, i * 8 + 8), 2);
+      }
+      var hash = await sha256(entBytes);
+      var hashBits = '';
+      for (var i = 0; i < hash.length; i++) {
+        hashBits += hash[i].toString(2).padStart(8, '0');
+      }
+      var expectedCs = hashBits.slice(0, csBits);
+      if (csSection !== expectedCs) {
+        return { valid: false, error: 'Invalid checksum — check your words carefully' };
+      }
+      return { valid: true, words: words };
+    }
+
+    async function mnemonicToSeed(mnemonic, passphrase) {
+      var enc = new TextEncoder();
+      var password = enc.encode(mnemonic.trim().toLowerCase().split(/\s+/).join(' '));
+      var salt = enc.encode('mnemonic' + (passphrase || ''));
+      var keyMaterial = await crypto.subtle.importKey(
+        'raw', password, 'PBKDF2', false, ['deriveBits']
+      );
+      var seedBuf = await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt: salt, iterations: 2048, hash: 'SHA-512' },
+        keyMaterial, 512
+      );
+      return new Uint8Array(seedBuf);
+    }
+
+    // ─── HMAC-SHA256 (Web Crypto) ───────────────────────────────────
+
+    async function hmacSha256(key, data) {
+      var cryptoKey = await crypto.subtle.importKey(
+        'raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+      );
+      var sig = await crypto.subtle.sign('HMAC', cryptoKey, data);
+      return new Uint8Array(sig);
+    }
+
+    // ─── Ed25519 curve operations (BigInt) ───────────────────────────
+    // Minimal Ed25519 point arithmetic for BIP32-Ed25519 derivation.
+    // Twisted Edwards curve: -x² + y² = 1 + d·x²·y² over GF(2²⁵⁵ - 19)
+
+    var ED_P = (1n << 255n) - 19n;
+    var ED_D = -121665n * modInv(121666n, ED_P) % ED_P;
+    if (ED_D < 0n) ED_D += ED_P;
+
+    // Base point (little-endian y coordinate with sign bit)
+    var ED_GY = 4n * modInv(5n, ED_P) % ED_P;
+    var ED_GX = xRecover(ED_GY);
+    // Base point in extended coordinates [X, Y, Z, T]
+    var ED_BASE = [ED_GX, ED_GY, 1n, (ED_GX * ED_GY) % ED_P];
+
+    function modPow(base, exp, mod) {
+      var result = 1n;
+      base = ((base % mod) + mod) % mod;
+      while (exp > 0n) {
+        if (exp & 1n) result = result * base % mod;
+        exp >>= 1n;
+        base = base * base % mod;
+      }
+      return result;
+    }
+
+    function modInv(a, m) { return modPow(a, m - 2n, m); }
+
+    function xRecover(y) {
+      var y2 = y * y % ED_P;
+      var x2 = (y2 - 1n) * modInv(ED_D * y2 + 1n, ED_P) % ED_P;
+      if (x2 < 0n) x2 += ED_P;
+      var x = modPow(x2, (ED_P + 3n) / 8n, ED_P);
+      if ((x * x - x2) % ED_P !== 0n) {
+        var I2 = modPow(2n, (ED_P - 1n) / 4n, ED_P);
+        x = x * I2 % ED_P;
+      }
+      if (x % 2n !== 0n) x = ED_P - x;
+      return x;
+    }
+
+    // Extended coordinates: point = [X, Y, Z, T] where x=X/Z, y=Y/Z, T=X*Y/Z
+    function edAdd(P, Q) {
+      var A = (P[1] - P[0] + ED_P) * ((Q[1] - Q[0] + ED_P) % ED_P) % ED_P;
+      var B = (P[1] + P[0]) % ED_P * ((Q[1] + Q[0]) % ED_P) % ED_P;
+      var C = 2n * P[3] % ED_P * Q[3] % ED_P * ED_D % ED_P;
+      if (C < 0n) C += ED_P;
+      var D = 2n * P[2] % ED_P * Q[2] % ED_P;
+      var E = (B - A + ED_P) % ED_P;
+      var F = (D - C + ED_P) % ED_P;
+      var G = (D + C) % ED_P;
+      var H = (B + A) % ED_P;
+      return [(E * F) % ED_P, (G * H) % ED_P, (F * G) % ED_P, (E * H) % ED_P];
+    }
+
+    function edDouble(P) {
+      var A = P[0] * P[0] % ED_P;
+      var B = P[1] * P[1] % ED_P;
+      var C = 2n * P[2] % ED_P * P[2] % ED_P;
+      var D = (ED_P - A) % ED_P; // -A because a=-1 in twisted Edwards
+      var E = ((P[0] + P[1]) * (P[0] + P[1]) - A - B + ED_P + ED_P) % ED_P;
+      var G = (D + B) % ED_P;
+      var F = (G - C + ED_P) % ED_P;
+      var H = (D - B + ED_P) % ED_P;
+      return [(E * F) % ED_P, (G * H) % ED_P, (F * G) % ED_P, (E * H) % ED_P];
+    }
+
+    function edScalarMult(scalar, point) {
+      var result = [0n, 1n, 1n, 0n]; // identity point
+      var q = point;
+      var s = scalar;
+      while (s > 0n) {
+        if (s & 1n) result = edAdd(result, q);
+        q = edDouble(q);
+        s >>= 1n;
+      }
+      return result;
+    }
+
+    function edCompress(point) {
+      // Convert from extended to affine and compress
+      var zi = modInv(point[2], ED_P);
+      var x = (point[0] * zi % ED_P + ED_P) % ED_P;
+      var y = (point[1] * zi % ED_P + ED_P) % ED_P;
+      var out = new Uint8Array(32);
+      for (var i = 0; i < 32; i++) {
+        out[i] = Number((y >> BigInt(i * 8)) & 0xFFn);
+      }
+      out[31] |= (x & 1n) ? 0x80 : 0;
+      return out;
+    }
+
+    function bytesToBigIntLE(bytes) {
+      var n = 0n;
+      for (var i = bytes.length - 1; i >= 0; i--) {
+        n = (n << 8n) | BigInt(bytes[i]);
+      }
+      return n;
+    }
+
+    // ─── BIP32-Ed25519 derivation (Khovratovich/Law) ────────────────
+    // Matches Ledger firmware's os_perso_derive_node_bip32 for Ed25519.
+
+    async function bip32Ed25519Derive(seed, pathString) {
+      var sk = new TextEncoder().encode('ed25519 seed');
+
+      // Master key: expand_seed_ed25519_bip32
+      // chain_code = HMAC-SHA256(sk, 0x01 || seed)
+      var buf = new Uint8Array(1 + seed.length);
+      buf[0] = 0x01;
+      buf.set(seed, 1);
+      var chainCode = await hmacSha256(sk, buf);
+
+      // kP = HMAC-SHA512(sk, seed) → 64 bytes
+      var kP = await hmacSha512(sk, seed);
+
+      // While bit 5 of byte 31 is set, rehash
+      while (kP[31] & 0x20) {
+        kP = await hmacSha512(sk, kP);
+      }
+
+      // Clamp kL
+      kP[0] &= 0xF8;
+      kP[31] = (kP[31] & 0x7F) | 0x40;
+
+      // Parse and apply path
+      var parts = pathString.replace(/^m\//, '').split('/');
+      for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        var hardened = p.endsWith("'");
+        var num = parseInt(p.replace("'", ''), 10);
+        var index = hardened ? ((num | 0x80000000) >>> 0) : num;
+
+        var data, len;
+        if (hardened) {
+          // Hardened: 0x00 || kP(64) || index(4 bytes LE)
+          data = new Uint8Array(1 + 64 + 4);
+          data[0] = 0x00;
+          data.set(kP, 1);
+          len = 65;
+        } else {
+          // Unhardened: compute public key A = kL × G
+          var scalar = bytesToBigIntLE(kP.slice(0, 32));
+          var point = edScalarMult(scalar, ED_BASE);
+          var compressed = edCompress(point);
+          // 0x02 || compressed_pubkey(32) || index(4 bytes LE)
+          data = new Uint8Array(1 + 32 + 4);
+          data[0] = 0x02;
+          data.set(compressed, 1);
+          len = 33;
+        }
+        // Index in little-endian
+        data[len] = index & 0xff;
+        data[len + 1] = (index >>> 8) & 0xff;
+        data[len + 2] = (index >>> 16) & 0xff;
+        data[len + 3] = (index >>> 24) & 0xff;
+        len += 4;
+
+        // Z = HMAC-SHA512(chain_code, data)
+        var Z = await hmacSha512(chainCode, data.slice(0, len));
+        var ZL = Z.slice(0, 32);
+        var ZR = Z.slice(32);
+
+        // New kL = 8 * ZL[0:28] + kLP
+        // (clear top 4 bytes of ZL, multiply by 8, add old kL)
+        var zlBig = bytesToBigIntLE(ZL);
+        zlBig &= (1n << 224n) - 1n; // clear top 32 bits
+        zlBig *= 8n;
+        var klBig = bytesToBigIntLE(kP.slice(0, 32));
+        var newKL = zlBig + klBig;
+
+        // New kR = ZR + kRP
+        var krBig = bytesToBigIntLE(kP.slice(32));
+        var zrBig = bytesToBigIntLE(ZR);
+        var newKR = zrBig + krBig;
+
+        // Store new kL, kR (little-endian, 32 bytes each)
+        var newKP = new Uint8Array(64);
+        for (var j = 0; j < 32; j++) {
+          newKP[j] = Number((newKL >> BigInt(j * 8)) & 0xFFn);
+          newKP[32 + j] = Number((newKR >> BigInt(j * 8)) & 0xFFn);
+        }
+
+        // Chain code: different prefix for hardened vs unhardened
+        var ccData;
+        if (hardened) {
+          // 0x01 || old_kP(64) || index(4 bytes LE)
+          ccData = new Uint8Array(1 + 64 + 4);
+          ccData[0] = 0x01;
+          // Use OLD kP for chain code computation (before swap)
+          ccData.set(kP, 1);
+          var ccLen = 65;
+        } else {
+          // 0x03 || compressed_pubkey(32) || index(4 bytes LE)
+          ccData = new Uint8Array(1 + 32 + 4);
+          ccData[0] = 0x03;
+          ccData.set(compressed, 1);
+          var ccLen = 33;
+        }
+        ccData[ccLen] = index & 0xff;
+        ccData[ccLen + 1] = (index >>> 8) & 0xff;
+        ccData[ccLen + 2] = (index >>> 16) & 0xff;
+        ccData[ccLen + 3] = (index >>> 24) & 0xff;
+        ccLen += 4;
+
+        var ccHash = await hmacSha512(chainCode, ccData.slice(0, ccLen));
+        chainCode = ccHash.slice(32); // Take bytes 32-63 as new chain code
+
+        zeroUint8Array(kP);
+        kP = newKP;
+      }
+
+      // Return first 32 bytes (kL) — treated as Ed25519 seed by the Ledger OS
+      var result = new Uint8Array(kP.slice(0, 32));
+      zeroUint8Array(kP);
+      zeroUint8Array(chainCode);
+      return result;
+    }
+
+    // ─── Mnemonic Recovery transport ─────────────────────────────────
+
+    function MnemonicTransport(keyPair) {
+      this.keyPair = keyPair;
+    }
+
+    MnemonicTransport.create = async function (mnemonic, passphrase, accountIndex) {
+      // Validate mnemonic
+      var result = await validateMnemonic(mnemonic);
+      if (!result.valid) throw new Error(result.error);
+
+      // Derive BIP39 seed
+      var bip39Seed = await mnemonicToSeed(mnemonic, passphrase);
+
+      // Derive BIP32-Ed25519 key at Pocket path
+      var path = "44'/635'/" + accountIndex;
+      var ed25519Seed = await bip32Ed25519Derive(bip39Seed, path);
+
+      // Zero BIP39 seed
+      zeroUint8Array(bip39Seed);
+
+      // Create Ed25519 keypair from derived seed
+      // The Ledger OS treats the 32-byte kL as a seed: SHA-512(kL) → clamp → scalar
+      var keyPair = nacl.sign.keyPair.fromSeed(ed25519Seed);
+
+      // Zero the derivation seed
+      zeroUint8Array(ed25519Seed);
+
+      return new MnemonicTransport(keyPair);
+    };
+
+    MnemonicTransport.prototype.close = function () {
+      if (this.keyPair) {
+        zeroUint8Array(this.keyPair.secretKey);
+        this.keyPair = null;
+      }
+    };
 
     // ─── Alamgu blocks protocol ─────────────────────────────────────────
     // The Pocket Ledger app (built on Alamgu/Rust) uses a SHA256-verified
@@ -715,7 +1294,10 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
     var isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
     var DEV_MODE = isLocalhost && new URLSearchParams(window.location.search).get('dev') === 'true';
 
+    var recoveryModeActive = false;
+
     function getSelectedMode() {
+      if (recoveryModeActive) return 'mnemonic';
       if (!DEV_MODE) return 'usb';
       var checked = document.querySelector('input[name="mode"]:checked');
       return checked ? checked.value : 'usb';
@@ -839,8 +1421,8 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
 
       var pubKey, addr;
 
-      if (mode === 'demo') {
-        // Demo: return public key directly from in-memory keypair
+      if (mode === 'demo' || mode === 'mnemonic') {
+        // Demo/Mnemonic: return public key directly from in-memory keypair
         await new Promise(function (r) { setTimeout(r, 300); });
         pubKey = toHex(transport.keyPair.publicKey);
         // Pocket address = first 20 bytes of SHA256(pubkey)
@@ -904,14 +1486,16 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
         showStatus('Signing — auto-approving on emulator...');
       } else if (mode === 'demo') {
         showStatus('Signing with demo key...');
+      } else if (mode === 'mnemonic') {
+        showStatus('Signing with recovered key...');
       } else {
         showStatus('Please approve BLIND SIGNING on your Ledger device...');
       }
 
       var sig;
 
-      if (mode === 'demo') {
-        // Demo: sign directly with tweetnacl
+      if (mode === 'demo' || mode === 'mnemonic') {
+        // Demo/Mnemonic: sign directly with tweetnacl
         await new Promise(function (r) { setTimeout(r, 300); });
         var msgBytes = new TextEncoder().encode(challengeMsg);
         var sigBytes = nacl.sign.detached(msgBytes, transport.keyPair.secretKey);
@@ -993,6 +1577,9 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
         timestamp = Date.now();
       }
 
+      var mode = getSelectedMode();
+      var method = mode === 'mnemonic' ? 'mnemonic_recovery' : mode === 'demo' ? 'demo' : 'ledger';
+
       var proofData = {
         address: currentAddress,
         publicKey: currentPublicKey,
@@ -1000,6 +1587,7 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
         signature: currentSignature,
         timestamp: timestamp,
         accountIndex: $('accountIndex').value || '0',
+        method: method,
         verified: currentVerified,
       };
 
@@ -1335,6 +1923,73 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
 
     $('proveBtn').addEventListener('click', proveOwnership);
     $('exportBtn').addEventListener('click', exportProof);
+
+    // Recovery mode toggle
+    $('recoveryToggleBtn').addEventListener('click', function () {
+      var panel = $('recoveryPanel');
+      var arrow = $('recoveryToggleArrow');
+      var isHidden = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden');
+      arrow.style.transform = isHidden ? 'rotate(90deg)' : '';
+      if (!isHidden) {
+        // Collapsing: clear inputs
+        $('mnemonicInput').value = '';
+        $('mnemonicPassphrase').value = '';
+        if (recoveryModeActive) {
+          recoveryModeActive = false;
+          if (transport && transport.close) transport.close();
+          transport = null;
+        }
+      }
+    });
+
+    // Derive button
+    $('deriveBtn').addEventListener('click', async function () {
+      var mnemonic = $('mnemonicInput').value.trim();
+      var passphrase = $('mnemonicPassphrase').value;
+      var accountIdx = $('accountIndex').value || '0';
+
+      if (!mnemonic) {
+        showError('Please enter your recovery phrase.');
+        return;
+      }
+
+      try {
+        hideError();
+        resetResults();
+        showStatus('Validating mnemonic...');
+
+        // Validate
+        var validation = await validateMnemonic(mnemonic);
+        if (!validation.valid) {
+          throw new Error(validation.error);
+        }
+
+        showStatus('Deriving key (this may take a moment)...');
+
+        // Create MnemonicTransport
+        var mnemonicTransport = await MnemonicTransport.create(mnemonic, passphrase, accountIdx);
+
+        // Clear inputs immediately
+        $('mnemonicInput').value = '';
+        $('mnemonicPassphrase').value = '';
+
+        // Close previous transport
+        if (transport && transport.close) transport.close();
+        transport = mnemonicTransport;
+        recoveryModeActive = true;
+
+        showStatus('Key derived! Proving ownership...');
+
+        // Auto-run prove ownership
+        await proveOwnership();
+
+      } catch (err) {
+        hideStatus();
+        showError('Recovery failed: ' + err.message);
+        console.error(err);
+      }
+    });
 
     // Verify: file upload
     $('proofFile').addEventListener('change', function (e) {
