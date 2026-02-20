@@ -91,17 +91,17 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
 
         <div class="space-y-6">
           <!-- Browser check warning -->
-          <div id="noWebUSB" class="hidden bg-red-50 border border-red-200 p-4 rounded-lg">
+          <div id="noWebHID" class="hidden bg-red-50 border border-red-200 p-4 rounded-lg">
             <p class="text-red-800 font-semibold">Browser Not Supported for USB</p>
             <p class="text-red-700 text-sm mt-1">
-              Direct Ledger connection requires WebUSB (<strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Opera</strong>).
+              Direct Ledger connection requires WebHID (<strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Opera</strong>).
               However, <strong>mnemonic recovery</strong> works in any browser — scroll down to use it.
             </p>
           </div>
           <div id="noHTTPS" class="hidden bg-red-50 border border-red-200 p-4 rounded-lg">
             <p class="text-red-800 font-semibold">Secure Connection Required</p>
             <p class="text-red-700 text-sm mt-1">
-              This tool requires <strong>HTTPS</strong>. WebUSB and cryptographic verification
+              This tool requires <strong>HTTPS</strong>. WebHID and cryptographic verification
               will not work over an insecure HTTP connection.
             </p>
           </div>
@@ -359,7 +359,7 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
               try index 0 first and verify it matches your known POKT address.
             </p>
             <p class="text-gray-500 text-xs mt-3">
-              <strong>Note:</strong> Mnemonic recovery works in any modern browser. WebUSB (Chrome/Edge) is only needed for direct Ledger connection.
+              <strong>Note:</strong> Mnemonic recovery works in any modern browser. WebHID (Chrome/Edge) is only needed for direct Ledger connection.
             </p>
           </div>
 
@@ -1124,54 +1124,50 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
       }
     }
 
-    // ─── Ledger WebUSB transport ───────────────────────────────────────
+    // ─── Ledger WebHID transport ────────────────────────────────────────
+    // Uses WebHID API (navigator.hid) instead of WebUSB because Chrome
+    // blocks WebUSB access to HID-class interfaces ("protected class" error).
+    // WebHID is the same approach Ledger's own official libraries use.
 
     var LEDGER_VENDOR_ID = 0x2c97;
     var HID_CHANNEL = 0x0101;
     var HID_TAG_APDU = 0x05;
     var HID_PACKET_SIZE = 64;
 
-    function LedgerTransport(device, endpointIn, endpointOut) {
+    function LedgerTransport(device) {
       this.device = device;
-      this.endpointIn = endpointIn;
-      this.endpointOut = endpointOut;
+      this._inputQueue = [];
+      this._inputWaiters = [];
+      var self = this;
+      device.addEventListener('inputreport', function (event) {
+        var packet = new Uint8Array(event.data.buffer);
+        if (self._inputWaiters.length > 0) {
+          self._inputWaiters.shift()(packet);
+        } else {
+          self._inputQueue.push(packet);
+        }
+      });
     }
 
     LedgerTransport.create = async function () {
-      if (!navigator.usb) {
-        throw new Error('WebUSB is not supported in this browser. Use Chrome, Edge, or Opera.');
+      if (!navigator.hid) {
+        throw new Error('WebHID is not supported in this browser. Use Chrome, Edge, or Opera.');
       }
 
-      var device = await navigator.usb.requestDevice({
+      var devices = await navigator.hid.requestDevice({
         filters: [{ vendorId: LEDGER_VENDOR_ID }],
       });
 
-      await device.open();
-
-      if (!device.configuration) {
-        await device.selectConfiguration(1);
+      if (!devices || devices.length === 0) {
+        throw new Error('No Ledger device selected');
       }
 
-      var selectedIface = null, epIn = null, epOut = null;
-
-      for (var iface of device.configuration.interfaces) {
-        var alt = iface.alternate;
-        var inEp = alt.endpoints.find(function (e) { return e.direction === 'in'; });
-        var outEp = alt.endpoints.find(function (e) { return e.direction === 'out'; });
-        if (inEp && outEp) {
-          selectedIface = iface;
-          epIn = inEp.endpointNumber;
-          epOut = outEp.endpointNumber;
-          break;
-        }
+      var device = devices[0];
+      if (!device.opened) {
+        await device.open();
       }
 
-      if (!selectedIface) {
-        throw new Error('No compatible USB interface found on Ledger device');
-      }
-
-      await device.claimInterface(selectedIface.interfaceNumber);
-      return new LedgerTransport(device, epIn, epOut);
+      return new LedgerTransport(device);
     };
 
     LedgerTransport.prototype._buildAPDU = function (cla, ins, p1, p2, data) {
@@ -1208,11 +1204,20 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
       return packets;
     };
 
+    LedgerTransport.prototype._receivePacket = function () {
+      var self = this;
+      if (self._inputQueue.length > 0) {
+        return Promise.resolve(self._inputQueue.shift());
+      }
+      return new Promise(function (resolve) {
+        self._inputWaiters.push(resolve);
+      });
+    };
+
     LedgerTransport.prototype._receive = async function () {
       var seq = 0, totalLength = 0, parts = [], received = 0;
       while (true) {
-        var result = await this.device.transferIn(this.endpointIn, HID_PACKET_SIZE);
-        var packet = new Uint8Array(result.data.buffer);
+        var packet = await this._receivePacket();
         var pos = 5;
         if (seq === 0) {
           totalLength = (packet[pos] << 8) | packet[pos + 1];
@@ -1232,7 +1237,7 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
       var apdu = this._buildAPDU(cla, ins, p1, p2, data);
       var packets = this._frame(apdu);
       for (var i = 0; i < packets.length; i++) {
-        await this.device.transferOut(this.endpointOut, packets[i]);
+        await this.device.sendReport(0x00, packets[i]);
       }
       var response = await this._receive();
       if (response.length < 2) throw new Error('Invalid response from Ledger (too short)');
@@ -1243,6 +1248,7 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
           0x6985: 'Transaction rejected on device',
           0x6986: 'Command not allowed (device locked or app not ready)',
           0x6e00: 'Wrong app — please open the Pocket app on your Ledger',
+          0x6e01: 'No app open — please open the Pocket app on your Ledger',
           0x6d00: 'Instruction not supported by the Pocket app',
           0x6a80: 'Invalid data sent to device',
           0x6b00: 'Invalid parameter',
@@ -1934,8 +1940,8 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
     if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
       $('noHTTPS').classList.remove('hidden');
     }
-    if (!navigator.usb && !DEV_MODE) {
-      $('noWebUSB').classList.remove('hidden');
+    if (!navigator.hid && !DEV_MODE) {
+      $('noWebHID').classList.remove('hidden');
     }
 
     // Path display
