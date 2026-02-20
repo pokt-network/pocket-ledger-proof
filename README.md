@@ -53,10 +53,12 @@ The standard 3-component path matches what the [Pocket Ledger app test suite](ht
 ## Requirements
 
 ### Ledger USB mode
-- **Browser:** Chrome or Edge (WebUSB support required)
+- **Browser:** Chrome or Edge (WebHID support required)
 - **Device:** Ledger Nano S, S+, or X
 - **App:** [Pocket Ledger app](https://github.com/aspect-build/ledger-app-pocket) installed on the device
 - **Setting:** Blind Signing must be enabled in the Pocket app settings
+
+> **Brave users:** WebHID is disabled by default. Go to `brave://flags`, search for "WebHID", set it to **Enabled**, and relaunch.
 
 ### Mnemonic recovery mode
 - **Browser:** Any modern browser (Chrome, Firefox, Safari, Edge)
