@@ -16,7 +16,7 @@ A single-file web app for proving ownership of Pocket Network (POKT) addresses s
 
 ### Option B — Mnemonic Recovery
 
-If the Pocket Ledger app has been delisted from Ledger Live and you cannot install it, you can derive your keys from your 24-word recovery phrase directly in the browser:
+If you cannot install the Pocket Ledger app on your device (see [Sideloading Guide](SIDELOAD.md)), you can derive your keys from your 24-word recovery phrase directly in the browser:
 
 1. **Disconnect from the internet** before entering your mnemonic
 2. Open the page (it works offline — save the HTML file first)
@@ -33,29 +33,31 @@ The mnemonic recovery uses BIP32-Ed25519 key derivation (matching the Ledger fir
 - Use a private/incognito window and close it after
 - Mnemonic recovery works in any modern browser (not just Chrome/Edge)
 
-## Account Index & Derivation Path
+## Finding Your Address
 
-The account index selects which key to derive from your Ledger seed. Most users have a single account at **index 0** (the default).
+If the generated address doesn't match your known POKT address, try the following:
 
-If you created additional accounts, generate a separate proof for each index. The derived address changes with each index — try 0 first and verify it matches your known POKT address.
+1. **Try different account indexes** — If you created multiple accounts, each index (0, 1, 2...) derives a different address. Start with index 0 and increment until you find a match.
+2. **Try the other derivation path format** — Switch between Standard and Extended in the dropdown and re-derive. Different wallets may have used different path formats.
+3. **If using mnemonic recovery** — You must re-enter your mnemonic each time you change the index or path format, as the key is derived at the moment you click "Derive Key & Prove Ownership".
 
 ### Derivation path format
 
-The Pocket Ledger app accepts variable-length BIP-44 paths — it only validates that the path starts with `44'/635'` and passes the full path to the Ledger's key derivation. The app offers two path formats via a dropdown:
+The app offers two path formats:
 
 | Format | Path | Notes |
 |--------|------|-------|
-| **Standard** (default) | `44'/635'/index` | Used by the Ledger app's GetPubkey tests |
-| **Extended** | `44'/635'/index'/0/0` | Full BIP-44 structure with change/address levels |
+| **Standard** (default) | `44'/635'/index` | Matches the Ledger app's test suite |
+| **Extended** | `44'/635'/index'/0/0` | Full BIP-44 structure |
 
-The standard 3-component path matches what the [Pocket Ledger app test suite](https://github.com/aspect-build/ledger-app-pocket) uses for public key retrieval. If your address doesn't match with one format, try the other. The derivation path is recorded in the exported proof JSON so verifiers know which was used.
+Try **Standard at index 0** first. If your address doesn't match, try **Extended at index 0**. If neither matches, increment the index. The derivation path is recorded in the exported proof JSON so verifiers know which was used.
 
 ## Requirements
 
 ### Ledger USB mode
 - **Browser:** Chrome or Edge (WebHID support required)
 - **Device:** Ledger Nano S, S+, or X
-- **App:** [Pocket Ledger app](https://github.com/aspect-build/ledger-app-pocket) installed on the device
+- **App:** [Pocket Ledger app](https://github.com/obsidiansystems/ledger-app-pocket) installed on the device — see [Sideloading Guide](SIDELOAD.md)
 - **Setting:** Blind Signing must be enabled in the Pocket app settings
 
 > **Brave users:** WebHID is disabled by default. Go to `brave://flags`, search for "WebHID", set it to **Enabled**, and relaunch.

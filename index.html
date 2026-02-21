@@ -352,19 +352,26 @@ label:has(input[value="demo"]:checked){border-color:var(--green)!important;backg
               <li>Click "Derive Key &amp; Prove Ownership" — your key is derived in-browser</li>
               <li>Export the proof JSON file</li>
             </ol>
-            <p class="text-gray-600 text-xs font-semibold mb-2 mt-4" style="text-transform:uppercase;letter-spacing:0.05em;">Account Index</p>
+            <p class="text-gray-600 text-xs font-semibold mb-2 mt-4" style="text-transform:uppercase;letter-spacing:0.05em;">Finding Your Address</p>
             <p class="text-gray-700 text-sm">
-              Most users have a single account at <strong>index 0</strong> (the default). If you created additional accounts
-              on your Ledger, increment the index and generate a separate proof for each. The derived address changes with each index —
-              try index 0 first and verify it matches your known POKT address.
+              If the generated address doesn't match your known POKT address:
             </p>
-            <p class="text-gray-500 text-xs mt-3">
+            <ol class="list-decimal list-inside space-y-1 text-gray-700 text-sm mt-1">
+              <li>Try <strong>Standard</strong> path at index 0 first</li>
+              <li>If no match, switch to <strong>Extended</strong> path and re-derive</li>
+              <li>If still no match, try incrementing the account index (1, 2, 3...)</li>
+            </ol>
+            <p class="text-gray-500 text-xs mt-2">
+              Mnemonic recovery requires re-entering your phrase each time you change the path or index.
+            </p>
+            <p class="text-gray-500 text-xs mt-1">
               <strong>Note:</strong> Mnemonic recovery works in any modern browser. WebHID (Chrome/Edge) is only needed for direct Ledger connection.
             </p>
           </div>
 
           <div style="text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid rgba(76,155,245,0.08);">
             <p style="color:#3d4d60;font-size:12px;">Ed25519 &middot; BIP-44: 44'/635'/ &middot; Nano S, S+, X</p>
+            <p style="margin-top:8px;"><a href="https://github.com/pokt-network/pocket-ledger-proof" target="_blank" rel="noopener" style="color:#4c9bf5;font-size:12px;text-decoration:none;">GitHub</a></p>
           </div>
         </div>
       </div>
